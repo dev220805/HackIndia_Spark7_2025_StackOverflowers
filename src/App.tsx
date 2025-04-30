@@ -10,6 +10,9 @@ import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import NeedsListing from "./pages/NeedsListing";
+import UrgentNeeds from "./pages/UrgentNeeds";
+import Map from "./pages/Map";
+import About from "./pages/About";
 
 const queryClient = new QueryClient();
 
@@ -25,6 +28,9 @@ const App = () => (
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
             <Route path="/needs" element={<NeedsListing />} />
+            <Route path="/urgent-needs" element={<UrgentNeeds />} />
+            <Route path="/map" element={<Map />} />
+            <Route path="/about" element={<About />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

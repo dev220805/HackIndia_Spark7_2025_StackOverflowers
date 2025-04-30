@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,6 +16,12 @@ import { Heart, LogOut, Menu, Search, User, X } from 'lucide-react';
 const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const location = useLocation();
+  
+  // Check if the current path matches
+  const isActive = (path: string) => {
+    return location.pathname === path;
+  };
 
   return (
     <nav className="bg-white border-b py-4 sticky top-0 z-50">
@@ -28,10 +34,18 @@ const Navbar = () => {
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center space-x-8">
-          <Link to="/" className="text-gray-700 hover:text-blue-600 transition-colors">Home</Link>
-          <Link to="/map" className="text-gray-700 hover:text-blue-600 transition-colors">Find NGOs</Link>
-          <Link to="/needs" className="text-gray-700 hover:text-blue-600 transition-colors">Urgent Needs</Link>
-          <Link to="/about" className="text-gray-700 hover:text-blue-600 transition-colors">About</Link>
+          <Link to="/" className={`transition-colors ${isActive('/') ? 'text-blue-600 font-medium' : 'text-gray-700 hover:text-blue-600'}`}>
+            Home
+          </Link>
+          <Link to="/map" className={`transition-colors ${isActive('/map') ? 'text-blue-600 font-medium' : 'text-gray-700 hover:text-blue-600'}`}>
+            Find NGOs
+          </Link>
+          <Link to="/urgent-needs" className={`transition-colors ${isActive('/urgent-needs') ? 'text-blue-600 font-medium' : 'text-gray-700 hover:text-blue-600'}`}>
+            Urgent Needs
+          </Link>
+          <Link to="/about" className={`transition-colors ${isActive('/about') ? 'text-blue-600 font-medium' : 'text-gray-700 hover:text-blue-600'}`}>
+            About
+          </Link>
         </div>
 
         {/* Auth Buttons */}
@@ -101,21 +115,66 @@ const Navbar = () => {
       {/* Mobile menu */}
       {isMenuOpen && (
         <div className="md:hidden bg-white border-t mt-2 py-2 px-4 space-y-3">
-          <Link to="/" className="block py-2 text-gray-700 hover:text-blue-600 transition-colors">Home</Link>
-          <Link to="/map" className="block py-2 text-gray-700 hover:text-blue-600 transition-colors">Find NGOs</Link>
-          <Link to="/needs" className="block py-2 text-gray-700 hover:text-blue-600 transition-colors">Urgent Needs</Link>
-          <Link to="/about" className="block py-2 text-gray-700 hover:text-blue-600 transition-colors">About</Link>
+          <Link 
+            to="/" 
+            className={`block py-2 transition-colors ${isActive('/') ? 'text-blue-600 font-medium' : 'text-gray-700 hover:text-blue-600'}`}
+            onClick={() => setIsMenuOpen(false)}
+          >
+            Home
+          </Link>
+          <Link 
+            to="/map" 
+            className={`block py-2 transition-colors ${isActive('/map') ? 'text-blue-600 font-medium' : 'text-gray-700 hover:text-blue-600'}`}
+            onClick={() => setIsMenuOpen(false)}
+          >
+            Find NGOs
+          </Link>
+          <Link 
+            to="/urgent-needs" 
+            className={`block py-2 transition-colors ${isActive('/urgent-needs') ? 'text-blue-600 font-medium' : 'text-gray-700 hover:text-blue-600'}`}
+            onClick={() => setIsMenuOpen(false)}
+          >
+            Urgent Needs
+          </Link>
+          <Link 
+            to="/about" 
+            className={`block py-2 transition-colors ${isActive('/about') ? 'text-blue-600 font-medium' : 'text-gray-700 hover:text-blue-600'}`}
+            onClick={() => setIsMenuOpen(false)}
+          >
+            About
+          </Link>
           
           {isAuthenticated ? (
             <>
               <div className="border-t pt-2 mt-2">
-                <Link to="/profile" className="block py-2 text-gray-700 hover:text-blue-600 transition-colors">Profile</Link>
-                <Link to="/donations" className="block py-2 text-gray-700 hover:text-blue-600 transition-colors">My Donations</Link>
+                <Link 
+                  to="/profile" 
+                  className="block py-2 text-gray-700 hover:text-blue-600 transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Profile
+                </Link>
+                <Link 
+                  to="/donations" 
+                  className="block py-2 text-gray-700 hover:text-blue-600 transition-colors"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  My Donations
+                </Link>
                 {user?.role === 'ngo' && (
-                  <Link to="/manage-needs" className="block py-2 text-gray-700 hover:text-blue-600 transition-colors">Manage Needs</Link>
+                  <Link 
+                    to="/manage-needs" 
+                    className="block py-2 text-gray-700 hover:text-blue-600 transition-colors"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Manage Needs
+                  </Link>
                 )}
                 <button 
-                  onClick={logout} 
+                  onClick={() => {
+                    logout();
+                    setIsMenuOpen(false);
+                  }} 
                   className="flex items-center py-2 text-red-500 hover:text-red-600 transition-colors"
                 >
                   <LogOut className="mr-2 h-4 w-4" />
@@ -125,10 +184,10 @@ const Navbar = () => {
             </>
           ) : (
             <div className="flex flex-col space-y-2 pt-2 border-t mt-2">
-              <Link to="/login">
+              <Link to="/login" onClick={() => setIsMenuOpen(false)}>
                 <Button variant="outline" className="w-full">Login</Button>
               </Link>
-              <Link to="/signup">
+              <Link to="/signup" onClick={() => setIsMenuOpen(false)}>
                 <Button className="w-full">Sign Up</Button>
               </Link>
             </div>
