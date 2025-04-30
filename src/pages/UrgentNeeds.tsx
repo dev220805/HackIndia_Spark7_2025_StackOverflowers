@@ -14,8 +14,8 @@ import { Link } from 'react-router-dom';
 
 const UrgentNeeds = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
-  const [priorityFilter, setPriorityFilter] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [priorityFilter, setPriorityFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('active');
 
   // Filter needs based on filters and search
@@ -24,9 +24,9 @@ const UrgentNeeds = () => {
       need.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
       need.description.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesCategory = categoryFilter === '' || need.category === categoryFilter;
-    const matchesPriority = priorityFilter === '' || need.priority === priorityFilter;
-    const matchesStatus = statusFilter === '' || need.status === statusFilter;
+    const matchesCategory = categoryFilter === 'all' || need.category === categoryFilter;
+    const matchesPriority = priorityFilter === 'all' || need.priority === priorityFilter;
+    const matchesStatus = statusFilter === 'all' || need.status === statusFilter;
     
     return matchesSearch && matchesCategory && matchesPriority && matchesStatus;
   });
@@ -71,7 +71,7 @@ const UrgentNeeds = () => {
                   <SelectValue placeholder="Category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All categories</SelectItem>
+                  <SelectItem value="all">All categories</SelectItem>
                   {Object.entries(categories).map(([key, { label }]) => (
                     <SelectItem key={key} value={key}>{label}</SelectItem>
                   ))}
@@ -83,7 +83,7 @@ const UrgentNeeds = () => {
                   <SelectValue placeholder="Priority" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All priorities</SelectItem>
+                  <SelectItem value="all">All priorities</SelectItem>
                   {Object.entries(priorities).map(([key, { label }]) => (
                     <SelectItem key={key} value={key}>{label}</SelectItem>
                   ))}
@@ -95,7 +95,7 @@ const UrgentNeeds = () => {
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All statuses</SelectItem>
+                  <SelectItem value="all">All statuses</SelectItem>
                   <SelectItem value="active">Active</SelectItem>
                   <SelectItem value="fulfilled">Fulfilled</SelectItem>
                   <SelectItem value="expired">Expired</SelectItem>

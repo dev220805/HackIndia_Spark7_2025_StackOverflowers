@@ -55,14 +55,14 @@ const mockNGOs = [
 
 const Map = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [causeFilter, setCauseFilter] = useState('');
+  const [causeFilter, setCauseFilter] = useState('all');
   const [verifiedOnly, setVerifiedOnly] = useState(false);
 
   // Filter NGOs based on search term and filters
   const filteredNGOs = mockNGOs.filter(ngo => {
     const matchesSearch = ngo.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
                          ngo.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCause = causeFilter === '' || ngo.cause.includes(causeFilter);
+    const matchesCause = causeFilter === 'all' || ngo.cause.includes(causeFilter);
     const matchesVerified = !verifiedOnly || ngo.verified;
     
     return matchesSearch && matchesCause && matchesVerified;
@@ -90,7 +90,7 @@ const Map = () => {
                 <SelectValue placeholder="Filter by cause" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All causes</SelectItem>
+                <SelectItem value="all">All causes</SelectItem>
                 <SelectItem value="education">Education</SelectItem>
                 <SelectItem value="health">Health</SelectItem>
                 <SelectItem value="food">Food</SelectItem>
