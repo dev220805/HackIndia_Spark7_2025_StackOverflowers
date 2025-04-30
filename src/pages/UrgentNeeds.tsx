@@ -84,7 +84,7 @@ const UrgentNeeds = () => {
                 <SelectContent>
                   <SelectItem value="all">All priorities</SelectItem>
                   {Object.entries(priorities).map(([key, { label }]) => (
-                    <SelectItem key={key} value={key}>{label}</SelectItem>
+                    <SelectItem value={key} key={key}>{label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>

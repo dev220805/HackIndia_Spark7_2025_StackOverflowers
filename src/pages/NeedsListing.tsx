@@ -20,8 +20,8 @@ import { NeedCategory, NeedPriority } from '@/types';
 
 const NeedsListing = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [selectedPriority, setSelectedPriority] = useState<string>('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedPriority, setSelectedPriority] = useState<string>('all');
 
   // Filter needs based on search and filters
   const filteredNeeds = needs.filter(need => {
@@ -31,10 +31,10 @@ const NeedsListing = () => {
       need.description.toLowerCase().includes(searchQuery.toLowerCase());
     
     // Filter by category
-    const matchesCategory = !selectedCategory || need.category === selectedCategory;
+    const matchesCategory = selectedCategory === 'all' || need.category === selectedCategory;
     
     // Filter by priority
-    const matchesPriority = !selectedPriority || need.priority === selectedPriority;
+    const matchesPriority = selectedPriority === 'all' || need.priority === selectedPriority;
     
     return matchesSearch && matchesCategory && matchesPriority;
   });
@@ -71,7 +71,7 @@ const NeedsListing = () => {
                     <SelectValue placeholder="Filter by category" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Categories</SelectItem>
+                    <SelectItem value="all">All Categories</SelectItem>
                     {Object.entries(categories).map(([key, { label }]) => (
                       <SelectItem key={key} value={key}>
                         {label}
@@ -86,7 +86,7 @@ const NeedsListing = () => {
                     <SelectValue placeholder="Filter by priority" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Priorities</SelectItem>
+                    <SelectItem value="all">All Priorities</SelectItem>
                     {Object.entries(priorities).map(([key, { label }]) => (
                       <SelectItem key={key} value={key}>
                         {label}
@@ -173,8 +173,8 @@ const NeedsListing = () => {
                   variant="outline" 
                   onClick={() => {
                     setSearchQuery('');
-                    setSelectedCategory('');
-                    setSelectedPriority('');
+                    setSelectedCategory('all');
+                    setSelectedPriority('all');
                   }}
                 >
                   Clear Filters
