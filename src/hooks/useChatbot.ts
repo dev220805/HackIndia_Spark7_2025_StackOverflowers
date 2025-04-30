@@ -38,21 +38,51 @@ export const useChatbot = ({ apiKey }: UseChatbotProps = {}) => {
           }
         ]);
       } else {
-        // In a real implementation, this would call the OpenAI API
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Call OpenAI API
+        const chatMessages = messages.concat(userMessage).map(msg => ({
+          role: msg.role,
+          content: msg.content
+        }));
+        
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            model: 'gpt-4o-mini',
+            messages: [
+              {
+                role: 'system',
+                content: 'You are a helpful assistant for a donation platform called Impact Beacon. You provide information about donations, community needs, and how the platform connects donors with NGOs. Keep responses helpful, friendly and concise.'
+              },
+              ...chatMessages
+            ],
+            max_tokens: 500,
+            temperature: 0.7
+          })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error?.message || 'Failed to get response from OpenAI');
+        }
+
+        const data = await response.json();
+        const assistantResponse = data.choices[0]?.message?.content || 'Sorry, I could not generate a response.';
+        
         setMessages(prev => [
           ...prev,
-          { 
-            role: 'assistant', 
-            content: "I'm happy to help! This is a simulated response. Once you add your OpenAI API key, I'll be able to provide real answers to your questions about donations and community needs." 
-          }
+          { role: 'assistant', content: assistantResponse }
         ]);
       }
     } catch (error) {
+      console.error('Error in AI response:', error);
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to get response from AI",
+        description: error instanceof Error ? error.message : "Failed to get response from AI",
       });
     } finally {
       setIsLoading(false);

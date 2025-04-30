@@ -9,13 +9,16 @@ import {
   SheetFooter,
 } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
-import { Bot, Send } from 'lucide-react';
+import { Bot, Send, X } from 'lucide-react';
 import { useChatbot } from '@/hooks/useChatbot';
+
+// This is just an example API key format, not a real key
+const OPENAI_API_KEY = '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';
 
 const ChatbotButton = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
-  const { messages, isLoading, sendMessage } = useChatbot();
+  const { messages, isLoading, sendMessage, clearMessages } = useChatbot({ apiKey: OPENAI_API_KEY });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,8 +41,16 @@ const ChatbotButton = () => {
       {/* Chat sheet */}
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetContent className="sm:max-w-md flex flex-col h-full">
-          <SheetHeader>
+          <SheetHeader className="flex justify-between items-center">
             <SheetTitle>Ask Me Anything</SheetTitle>
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={clearMessages}
+              className="h-8 px-2"
+            >
+              Clear Chat
+            </Button>
           </SheetHeader>
           
           {/* Messages container */}
