@@ -6,10 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Search, Filter, MapPin, Clock, AlertTriangle } from 'lucide-react';
+import { Search, MapPin, Clock, AlertTriangle, Heart } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { needs, categories, priorities } from '@/data/mockData';
-import { Need } from '@/types';
 import { Link } from 'react-router-dom';
 
 const UrgentNeeds = () => {
@@ -34,7 +33,7 @@ const UrgentNeeds = () => {
   // Sort needs by priority (high first)
   const sortedNeeds = [...filteredNeeds].sort((a, b) => {
     const priorityOrder = { high: 0, medium: 1, low: 2 };
-    return priorityOrder[a.priority] - priorityOrder[b.priority];
+    return priorityOrder[a.priority as keyof typeof priorityOrder] - priorityOrder[b.priority as keyof typeof priorityOrder];
   });
 
   return (
@@ -186,11 +185,19 @@ const UrgentNeeds = () => {
                         </Link>
                       </div>
                       
-                      <Link to={`/needs/${need.id}`} className="w-full sm:w-auto">
-                        <Button variant="outline" className="w-full">
-                          View Details
-                        </Button>
-                      </Link>
+                      <div className="flex gap-2 w-full sm:w-auto">
+                        <Link to={`/needs/${need.id}`} className="w-full sm:w-auto">
+                          <Button variant="outline" className="w-full">
+                            View Details
+                          </Button>
+                        </Link>
+                        <Link to={`/donate/${need.id}`} className="w-full sm:w-auto">
+                          <Button className="w-full flex items-center">
+                            <Heart className="mr-2 h-4 w-4" />
+                            Donate Now
+                          </Button>
+                        </Link>
+                      </div>
                     </div>
                   </CardFooter>
                 </Card>

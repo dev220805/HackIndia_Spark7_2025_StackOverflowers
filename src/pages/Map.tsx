@@ -5,9 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Search, Filter } from 'lucide-react';
+import { MapPin, Search } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import MapView from '@/components/MapView';
+import { Link } from 'react-router-dom';
 
 // Mock data for NGOs - in a real app, this would come from Supabase
 const mockNGOs = [
@@ -57,6 +59,7 @@ const Map = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [causeFilter, setCauseFilter] = useState('all');
   const [verifiedOnly, setVerifiedOnly] = useState(false);
+  const [selectedNGO, setSelectedNGO] = useState<string | null>(null);
 
   // Filter NGOs based on search term and filters
   const filteredNGOs = mockNGOs.filter(ngo => {
@@ -67,6 +70,17 @@ const Map = () => {
     
     return matchesSearch && matchesCause && matchesVerified;
   });
+
+  // Handle NGO selection from the map
+  const handleSelectNGO = (id: string) => {
+    setSelectedNGO(id);
+    // Auto-switch to list view to see the selected NGO
+    const tabsList = document.querySelector('[role="tablist"]');
+    const listTab = tabsList?.querySelector('[data-state="inactive"][value="list"]');
+    if (listTab) {
+      (listTab as HTMLElement).click();
+    }
+  };
 
   return (
     <Layout>
@@ -127,7 +141,12 @@ const Map = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredNGOs.map(ngo => (
-                  <Card key={ngo.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                  <Card 
+                    key={ngo.id} 
+                    className={`overflow-hidden hover:shadow-lg transition-shadow ${
+                      selectedNGO === ngo.id ? 'ring-2 ring-blue-500' : ''
+                    }`}
+                  >
                     <CardHeader className="pb-2">
                       <div className="flex justify-between items-start">
                         <CardTitle className="text-xl">{ngo.name}</CardTitle>
@@ -160,9 +179,9 @@ const Map = () => {
                         <span className="text-amber-600 mx-1">★</span>
                         <span className="text-sm text-gray-500">Rating</span>
                       </div>
-                      <div className="text-sm text-blue-600">
+                      <Link to={`/ngo/${ngo.id}`} className="text-sm text-blue-600">
                         {ngo.activeNeeds} active needs
-                      </div>
+                      </Link>
                     </CardFooter>
                   </Card>
                 ))}
@@ -170,15 +189,9 @@ const Map = () => {
             )}
           </TabsContent>
           
-          {/* Map View - This would use a mapping library in a real app */}
+          {/* Map View - Now using the MapView component */}
           <TabsContent value="map">
-            <div className="bg-gray-100 rounded-lg border border-gray-200 h-[600px] flex items-center justify-center">
-              <div className="text-center">
-                <MapPin className="h-10 w-10 text-gray-400 mx-auto mb-2" />
-                <p className="text-gray-500">Map view would be implemented here with a mapping library</p>
-                <p className="text-gray-400 text-sm">Such as Google Maps, Mapbox, or Leaflet</p>
-              </div>
-            </div>
+            <MapView ngos={filteredNGOs} onSelectNGO={handleSelectNGO} />
           </TabsContent>
         </Tabs>
       </div>

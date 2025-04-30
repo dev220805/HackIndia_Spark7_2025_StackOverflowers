@@ -5,6 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { Progress } from '@/components/ui/progress';
 import { needs, categories, priorities } from '@/data/mockData';
 import { Badge } from '@/components/ui/badge';
+import { Heart } from 'lucide-react';
 
 const UrgentNeedsSection = () => {
   // Get top 3 urgent needs (high priority)
@@ -59,8 +60,11 @@ const UrgentNeedsSection = () => {
                   </div>
                 </CardContent>
                 <CardFooter className="border-t bg-gray-50 py-3">
-                  <Link to={`/needs/${need.id}`} className="w-full">
-                    <Button variant="outline" className="w-full">Donate Now</Button>
+                  <Link to={`/donate/${need.id}`} className="w-full">
+                    <Button variant="outline" className="w-full flex items-center justify-center">
+                      <Heart className="mr-2 h-4 w-4" />
+                      Donate Now
+                    </Button>
                   </Link>
                 </CardFooter>
               </Card>
