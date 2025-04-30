@@ -12,6 +12,8 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import NeedsListing from "./pages/NeedsListing";
 import UrgentNeeds from "./pages/UrgentNeeds";
+import NeedDetails from "./pages/NeedDetails";
+import Profile from "./pages/Profile";
 import Map from "./pages/Map";
 import About from "./pages/About";
 import DonationPage from "./pages/DonationPage";
@@ -33,6 +35,8 @@ const App = () => (
             <Route path="/signup" element={<Signup />} />
             <Route path="/needs" element={<NeedsListing />} />
             <Route path="/urgent-needs" element={<UrgentNeeds />} />
+            <Route path="/needs/:id" element={<NeedDetails />} />
+            <Route path="/profile" element={<Profile />} />
             <Route path="/map" element={<Map />} />
             <Route path="/about" element={<About />} />
             <Route path="/donate/:id" element={<DonationPage />} />

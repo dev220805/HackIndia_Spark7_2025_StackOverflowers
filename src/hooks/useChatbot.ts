@@ -38,44 +38,67 @@ export const useChatbot = ({ apiKey }: UseChatbotProps = {}) => {
           }
         ]);
       } else {
-        // Call OpenAI API
-        const chatMessages = messages.concat(userMessage).map(msg => ({
-          role: msg.role,
-          content: msg.content
-        }));
-        
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            model: 'gpt-4o-mini',
-            messages: [
-              {
-                role: 'system',
-                content: 'You are a helpful assistant for a donation platform called Impact Beacon. You provide information about donations, community needs, and how the platform connects donors with NGOs. Keep responses helpful, friendly and concise.'
-              },
-              ...chatMessages
-            ],
-            max_tokens: 500,
-            temperature: 0.7
-          })
-        });
+        try {
+          // Call OpenAI API
+          const chatMessages = messages.concat(userMessage).map(msg => ({
+            role: msg.role,
+            content: msg.content
+          }));
+          
+          const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${apiKey}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              model: 'gpt-4o-mini',
+              messages: [
+                {
+                  role: 'system',
+                  content: 'You are a helpful assistant for a donation platform called Impact Beacon. You provide information about donations, community needs, and how the platform connects donors with NGOs. Keep responses helpful, friendly and concise.'
+                },
+                ...chatMessages
+              ],
+              max_tokens: 500,
+              temperature: 0.7
+            })
+          });
 
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error?.message || 'Failed to get response from OpenAI');
+          if (!response.ok) {
+            const errorData = await response.json();
+            if (errorData.error?.message?.includes('quota')) {
+              throw new Error('API quota exceeded. Please try again later or use a different API key.');
+            }
+            throw new Error(errorData.error?.message || 'Failed to get response from OpenAI');
+          }
+
+          const data = await response.json();
+          const assistantResponse = data.choices[0]?.message?.content || 'Sorry, I could not generate a response.';
+          
+          setMessages(prev => [
+            ...prev,
+            { role: 'assistant', content: assistantResponse }
+          ]);
+        } catch (error: any) {
+          // If quota exceeded or other API error, fall back to predefined responses
+          if (error.message.includes('quota')) {
+            setMessages(prev => [
+              ...prev,
+              { 
+                role: 'assistant', 
+                content: "I'm sorry, but the API quota has been exceeded. I can still answer basic questions about Impact Beacon. What would you like to know about donations or community needs?" 
+              }
+            ]);
+            toast({
+              title: "API Quota Exceeded",
+              description: "Using fallback responses instead of the OpenAI API.",
+              variant: "destructive"
+            });
+          } else {
+            throw error;
+          }
         }
-
-        const data = await response.json();
-        const assistantResponse = data.choices[0]?.message?.content || 'Sorry, I could not generate a response.';
-        
-        setMessages(prev => [
-          ...prev,
-          { role: 'assistant', content: assistantResponse }
-        ]);
       }
     } catch (error) {
       console.error('Error in AI response:', error);
