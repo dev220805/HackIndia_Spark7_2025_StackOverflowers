@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import ScrollToTop from "./components/ScrollToTop";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
@@ -14,6 +15,7 @@ import UrgentNeeds from "./pages/UrgentNeeds";
 import Map from "./pages/Map";
 import About from "./pages/About";
 import DonationPage from "./pages/DonationPage";
+import ChatbotButton from "./components/ChatbotButton";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +26,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <ScrollToTop />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
@@ -35,6 +38,7 @@ const App = () => (
             <Route path="/donate/:id" element={<DonationPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <ChatbotButton />
         </BrowserRouter>
       </AuthProvider>
     </TooltipProvider>
