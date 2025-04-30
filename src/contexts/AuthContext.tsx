@@ -45,15 +45,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchUserProfile = async (userId: string) => {
     try {
-      const { data, error } = await supabase
+      const { data: profileData, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .maybeSingle();
 
       if (error) throw error;
-      if (data) {
-        setUser(data as User);
+      
+      if (profileData) {
+        // Transform the profile data to match the User type
+        const userData: User = {
+          id: profileData.id,
+          email: '', // We need to get this from the auth.user
+          name: profileData.name,
+          role: profileData.role as UserRole,
+          avatar: profileData.avatar_url,
+          createdAt: profileData.created_at,
+          verified: profileData.verified || false,
+          location: profileData.location as any,
+        };
+        
+        // Get the email from the auth user
+        const { data: authUser } = await supabase.auth.getUser();
+        if (authUser?.user) {
+          userData.email = authUser.user.email || '';
+        }
+        
+        setUser(userData);
       }
     } catch (error) {
       console.error('Error fetching user profile:', error);
