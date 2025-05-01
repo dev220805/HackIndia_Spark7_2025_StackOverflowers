@@ -37,10 +37,10 @@ const Login = () => {
     try {
       setIsLoading(true);
       await login(email, password);
-      // AuthContext will handle navigation after successful login
+      // On successful login, the auth context will redirect
     } catch (error) {
       console.error('Login error', error);
-      // AuthContext will display error toast
+      // Error toast is shown by AuthContext
     } finally {
       setIsLoading(false);
     }

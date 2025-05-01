@@ -129,13 +129,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signup = async (email: string, password: string, name: string, role: UserRole) => {
     try {
       setLoading(true);
+      console.log('Signing up with role:', role); // Debug log
+      
+      // First, sign up the user
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: {
-            name,
-            role,
+            name: name,
+            role: role,
           },
         },
       });
@@ -143,6 +146,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error) throw error;
 
       if (data.user) {
+        // Check if the user already has a profile
+        const { data: existingProfile, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', data.user.id)
+          .maybeSingle();
+          
+        if (profileError) {
+          console.error('Error checking profile:', profileError);
+        }
+          
+        // If no profile exists, create one
+        if (!existingProfile) {
+          const { error: insertError } = await supabase
+            .from('profiles')
+            .insert({
+              id: data.user.id,
+              name: name,
+              role: role
+            });
+            
+          if (insertError) {
+            console.error('Error creating profile:', insertError);
+            throw insertError;
+          }
+        }
+        
         toast('Account created successfully', {
           description: 'Please check your email to verify your account',
           position: 'top-center',

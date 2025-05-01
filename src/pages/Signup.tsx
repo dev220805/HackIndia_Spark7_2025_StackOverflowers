@@ -58,9 +58,9 @@ const Signup = () => {
     
     try {
       setIsLoading(true);
+      console.log('Signing up with role:', role); // Debug log
       await signup(email, password, name, role);
-      // On successful signup, user will be logged in automatically
-      // and redirected via the useEffect above
+      // On successful signup, the auth context will redirect
     } catch (error) {
       console.error('Signup error', error);
       // Error toast is shown by AuthContext
@@ -107,7 +107,10 @@ const Signup = () => {
                   <Label htmlFor="role">I am a</Label>
                   <Select 
                     value={role} 
-                    onValueChange={(value) => setRole(value as UserRole)}
+                    onValueChange={(value) => {
+                      console.log('Selected role:', value); // Debug log
+                      setRole(value as UserRole);
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select your role" />
