@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -49,13 +50,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           });
         } else {
           const userRole = profileData?.role as UserRole;
+          const locationData = profileData?.location ? {
+            lat: typeof profileData.location.lat === 'number' ? profileData.location.lat : 0,
+            lng: typeof profileData.location.lng === 'number' ? profileData.location.lng : 0,
+            address: typeof profileData.location.address === 'string' ? profileData.location.address : '',
+          } : undefined;
+
           setUser({
             id: session.user.id,
             name: profileData?.name || session.user.email || 'User',
             email: session.user.email || '',
             role: userRole,
             avatar: profileData?.avatar_url || '',
-            location: profileData?.location || undefined,
+            location: locationData,
             createdAt: profileData?.created_at || new Date().toISOString(),
             verified: profileData?.verified || false,
           });
@@ -83,13 +90,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           });
         } else {
           const userRole = profileData?.role as UserRole;
+          const locationData = profileData?.location ? {
+            lat: typeof profileData.location.lat === 'number' ? profileData.location.lat : 0,
+            lng: typeof profileData.location.lng === 'number' ? profileData.location.lng : 0,
+            address: typeof profileData.location.address === 'string' ? profileData.location.address : '',
+          } : undefined;
+
           setUser({
             id: session.user.id,
             name: profileData?.name || session.user.email || 'User',
             email: session.user.email || '',
             role: userRole,
             avatar: profileData?.avatar_url || '',
-            location: profileData?.location || undefined,
+            location: locationData,
             createdAt: profileData?.created_at || new Date().toISOString(),
             verified: profileData?.verified || false,
           });

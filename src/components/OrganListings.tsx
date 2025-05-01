@@ -9,6 +9,11 @@ import { toast } from '@/components/ui/sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { organTypes } from '@/data/organData';
 
+type OrganDonationUser = {
+  name: string;
+  email: string;
+};
+
 type OrganDonation = {
   id: string;
   created_at: string;
@@ -22,10 +27,7 @@ type OrganDonation = {
   hospital?: string;
   notes?: string;
   status: 'active' | 'matched' | 'completed' | 'cancelled';
-  user?: {
-    name: string;
-    email: string;
-  };
+  profiles?: OrganDonationUser;
 };
 
 type OrganListingsProps = {
@@ -71,13 +73,7 @@ const OrganListings = ({ type }: OrganListingsProps) => {
           
         if (error) throw error;
         
-        // Transform the data to match the OrganDonation type
-        const transformedData = data.map((item: any) => ({
-          ...item,
-          user: item.profiles
-        }));
-        
-        setListings(transformedData);
+        setListings(data || []);
       } catch (error) {
         console.error(`Error fetching ${type} listings:`, error);
         toast(`Failed to load ${type} listings`, {
@@ -105,7 +101,7 @@ const OrganListings = ({ type }: OrganListingsProps) => {
     
     // In a real app, this would open a chat or contact form
     toast('Contact initiated', {
-      description: `You'll be connected with ${listing.user?.name} shortly`,
+      description: `You'll be connected with ${listing.profiles?.name} shortly`,
     });
   };
 

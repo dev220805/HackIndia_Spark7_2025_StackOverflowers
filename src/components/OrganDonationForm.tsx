@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
-import { organTypes } from '@/data/organData';
+import { organTypes, bloodTypes } from '@/data/organData';
 
 type OrganDonationFormProps = {
   onComplete: () => void;
@@ -37,8 +37,12 @@ const OrganDonationForm = ({ onComplete }: OrganDonationFormProps) => {
     try {
       setIsSubmitting(true);
       
+      if (!user?.id) {
+        throw new Error('User not authenticated');
+      }
+      
       const { error } = await supabase.from('organ_donations').insert({
-        user_id: user?.id,
+        user_id: user.id,
         type: 'donation',
         organ_type: organType,
         blood_type: bloodType,
@@ -96,14 +100,11 @@ const OrganDonationForm = ({ onComplete }: OrganDonationFormProps) => {
                 <SelectValue placeholder="Select blood type" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="A+">A+</SelectItem>
-                <SelectItem value="A-">A-</SelectItem>
-                <SelectItem value="B+">B+</SelectItem>
-                <SelectItem value="B-">B-</SelectItem>
-                <SelectItem value="AB+">AB+</SelectItem>
-                <SelectItem value="AB-">AB-</SelectItem>
-                <SelectItem value="O+">O+</SelectItem>
-                <SelectItem value="O-">O-</SelectItem>
+                {bloodTypes.map((type) => (
+                  <SelectItem key={type.value} value={type.value}>
+                    {type.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

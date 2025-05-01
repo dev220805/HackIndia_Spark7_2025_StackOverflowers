@@ -2,6 +2,7 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ThemeProvider } from "next-themes";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
@@ -24,30 +25,32 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <AuthProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <ScrollToTop />
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
-            <Route path="/needs" element={<NeedsListing />} />
-            <Route path="/urgent-needs" element={<UrgentNeeds />} />
-            <Route path="/needs/:id" element={<NeedDetails />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/map" element={<Map />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/donate/:id" element={<DonationPage />} />
-            <Route path="/organ-donation" element={<OrganDonation />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-          <ChatbotButton />
-        </BrowserRouter>
-      </AuthProvider>
-    </TooltipProvider>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+      <TooltipProvider>
+        <AuthProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <ScrollToTop />
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/signup" element={<Signup />} />
+              <Route path="/needs" element={<NeedsListing />} />
+              <Route path="/urgent-needs" element={<UrgentNeeds />} />
+              <Route path="/needs/:id" element={<NeedDetails />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/map" element={<Map />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/donate/:id" element={<DonationPage />} />
+              <Route path="/organ-donation" element={<OrganDonation />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+            <ChatbotButton />
+          </BrowserRouter>
+        </AuthProvider>
+      </TooltipProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 

@@ -9,6 +9,54 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      organ_donations: {
+        Row: {
+          blood_type: string
+          created_at: string
+          hospital: string | null
+          id: string
+          medical_history: string | null
+          notes: string | null
+          organ_type: string
+          patient_details: string | null
+          status: string
+          type: string
+          updated_at: string
+          urgency: string | null
+          user_id: string
+        }
+        Insert: {
+          blood_type: string
+          created_at?: string
+          hospital?: string | null
+          id?: string
+          medical_history?: string | null
+          notes?: string | null
+          organ_type: string
+          patient_details?: string | null
+          status?: string
+          type: string
+          updated_at?: string
+          urgency?: string | null
+          user_id: string
+        }
+        Update: {
+          blood_type?: string
+          created_at?: string
+          hospital?: string | null
+          id?: string
+          medical_history?: string | null
+          notes?: string | null
+          organ_type?: string
+          patient_details?: string | null
+          status?: string
+          type?: string
+          updated_at?: string
+          urgency?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
