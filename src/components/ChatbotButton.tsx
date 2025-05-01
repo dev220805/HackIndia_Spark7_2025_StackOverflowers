@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,13 +11,14 @@ import { Input } from '@/components/ui/input';
 import { Bot, Send, X } from 'lucide-react';
 import { useChatbot } from '@/hooks/useChatbot';
 
-// This is just an example API key format, not a real key
-const OPENAI_API_KEY = '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';
+// Get API key from environment variable
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+console.log('API Key present:', !!GEMINI_API_KEY);
 
 const ChatbotButton = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
-  const { messages, isLoading, sendMessage, clearMessages } = useChatbot({ apiKey: OPENAI_API_KEY });
+  const { messages, isLoading, sendMessage, clearMessages } = useChatbot({ apiKey: GEMINI_API_KEY });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,7 +54,7 @@ const ChatbotButton = () => {
           </SheetHeader>
           
           {/* Messages container */}
-          <div className="flex-1 overflow-y-auto py-4 space-y-4">
+          <div className="flex-1 overflow-y-auto space-y-4 p-4">
             {messages.map((message, index) => (
               <div 
                 key={index} 

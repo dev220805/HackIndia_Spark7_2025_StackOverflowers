@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useToast } from '@/components/ui/use-toast';
 
@@ -7,9 +6,15 @@ export interface Message {
   content: string;
 }
 
-interface UseChatbotProps {
+interface UseChatbotProps { 
   apiKey?: string;
 }
+
+const FALLBACK_RESPONSES = {
+  noApiKey: "To use the AI chatbot, you'll need to add your Google Gemini API key.",
+  apiError: "I'm having trouble connecting to the AI service. I can still answer basic questions about Impact Beacon. What would you like to know about donations or community needs?",
+  quotaExceeded: "I'm sorry, but the API quota has been exceeded. I can still answer basic questions about Impact Beacon. What would you like to know about donations or community needs?"
+};
 
 export const useChatbot = ({ apiKey }: UseChatbotProps = {}) => {
   const [messages, setMessages] = useState<Message[]>([
@@ -20,88 +25,109 @@ export const useChatbot = ({ apiKey }: UseChatbotProps = {}) => {
 
   const sendMessage = async (content: string) => {
     if (!content.trim()) return;
-    
-    // Add user message
+
     const userMessage: Message = { role: 'user', content };
     setMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
-    
+
     try {
       if (!apiKey) {
-        // Simulate response if no API key
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        console.error('No API key provided');
         setMessages(prev => [
           ...prev,
-          { 
-            role: 'assistant', 
-            content: "To use the AI chatbot, you'll need to add your OpenAI API key. The AI can answer questions about donations, needs, and how the platform works." 
-          }
+          { role: 'assistant', content: FALLBACK_RESPONSES.noApiKey }
         ]);
-      } else {
-        try {
-          // Call OpenAI API
-          const chatMessages = messages.concat(userMessage).map(msg => ({
-            role: msg.role,
-            content: msg.content
-          }));
-          
-          const response = await fetch('https://api.openai.com/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${apiKey}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              model: 'gpt-4o-mini',
-              messages: [
-                {
-                  role: 'system',
-                  content: 'You are a helpful assistant for a donation platform called Impact Beacon. You provide information about donations, community needs, and how the platform connects donors with NGOs. Keep responses helpful, friendly and concise.'
-                },
-                ...chatMessages
-              ],
-              max_tokens: 500,
-              temperature: 0.7
-            })
+        return;
+      }
+
+      console.log('Using API key:', apiKey ? `${apiKey.substring(0, 8)}...` : 'No API key provided');
+      console.log('Sending request with content:', content);
+
+      if (!apiKey.startsWith('AIza')) {
+        console.error('Invalid API key format. API key should start with "AIza"');
+        setMessages(prev => [
+          ...prev,
+          { role: 'assistant', content: 'Invalid API key format. Please check your API key.' }
+        ]);
+        return;
+      }
+
+      try {
+        const response = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': apiKey,
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  { text: content }
+                ]
+              }
+            ]
+          })
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('API Error Details:', {
+            status: response.status,
+            statusText: response.statusText,
+            headers: Object.fromEntries(response.headers.entries()),
+            error: errorData
           });
 
-          if (!response.ok) {
-            const errorData = await response.json();
-            if (errorData.error?.message?.includes('quota')) {
-              throw new Error('API quota exceeded. Please try again later or use a different API key.');
-            }
-            throw new Error(errorData.error?.message || 'Failed to get response from OpenAI');
+          if (errorData.error?.message?.includes('API key not valid')) {
+            throw new Error('Invalid API key. Please make sure you have enabled the Gemini API in your Google Cloud Console and created a valid API key.');
+          } else if (errorData.error?.message?.includes('quota')) {
+            throw new Error('quota');
           }
+          throw new Error(errorData.error?.message || 'Failed to get response from API');
+        }
 
-          const data = await response.json();
-          const assistantResponse = data.choices[0]?.message?.content || 'Sorry, I could not generate a response.';
-          
-          setMessages(prev => [
-            ...prev,
-            { role: 'assistant', content: assistantResponse }
-          ]);
-        } catch (error: any) {
-          // If quota exceeded or other API error, fall back to predefined responses
+        const data = await response.json();
+        console.log('Successful API Response:', data);
+
+        const assistantResponse = data.candidates?.[0]?.content?.parts?.[0]?.text || 'Sorry, I could not generate a response.';
+
+        setMessages(prev => [
+          ...prev,
+          { role: 'assistant', content: assistantResponse }
+        ]);
+      } catch (error) {
+        console.error('Detailed error:', error);
+        if (error instanceof Error) {
           if (error.message.includes('quota')) {
             setMessages(prev => [
               ...prev,
-              { 
-                role: 'assistant', 
-                content: "I'm sorry, but the API quota has been exceeded. I can still answer basic questions about Impact Beacon. What would you like to know about donations or community needs?" 
-              }
+              { role: 'assistant', content: FALLBACK_RESPONSES.quotaExceeded }
             ]);
             toast({
               title: "API Quota Exceeded",
-              description: "Using fallback responses instead of the OpenAI API.",
+              description: "Using fallback responses instead of the API.",
               variant: "destructive"
             });
           } else {
-            throw error;
+            setMessages(prev => [
+              ...prev,
+              { role: 'assistant', content: FALLBACK_RESPONSES.apiError }
+            ]);
+            toast({
+              title: "API Error",
+              description: error.message,
+              variant: "destructive"
+            });
           }
         }
       }
     } catch (error) {
       console.error('Error in AI response:', error);
+      setMessages(prev => [
+        ...prev,
+        { role: 'assistant', content: FALLBACK_RESPONSES.apiError }
+      ]);
       toast({
         variant: "destructive",
         title: "Error",
