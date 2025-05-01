@@ -7,22 +7,40 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import Layout from '@/components/Layout';
+import { useEffect } from 'react';
+import { toast } from '@/components/ui/sonner';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/');
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!email || !password) {
+      toast('Please fill all fields', {
+        position: 'top-center',
+      });
+      return;
+    }
+    
     try {
       setIsLoading(true);
       await login(email, password);
-      navigate('/');
+      // AuthContext will handle navigation after successful login
     } catch (error) {
       console.error('Login error', error);
+      // AuthContext will display error toast
     } finally {
       setIsLoading(false);
     }

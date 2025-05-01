@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,6 +15,7 @@ import {
 import { useAuth } from '@/contexts/AuthContext';
 import { UserRole } from '@/types';
 import Layout from '@/components/Layout';
+import { toast } from '@/components/ui/sonner';
 
 const Signup = () => {
   const [name, setName] = useState('');
@@ -24,23 +25,45 @@ const Signup = () => {
   const [role, setRole] = useState<UserRole>('donor');
   const [isLoading, setIsLoading] = useState(false);
   const [passwordError, setPasswordError] = useState('');
-  const { signup } = useAuth();
+  const { signup, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/');
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Form validation
+    if (!name || !email || !password || !confirmPassword) {
+      toast('Please fill all fields', {
+        position: 'top-center',
+      });
+      return;
+    }
     
     if (password !== confirmPassword) {
       setPasswordError('Passwords do not match');
       return;
     }
     
+    if (password.length < 6) {
+      setPasswordError('Password must be at least 6 characters');
+      return;
+    }
+    
     try {
       setIsLoading(true);
       await signup(email, password, name, role);
-      navigate('/');
+      // On successful signup, user will be logged in automatically
+      // and redirected via the useEffect above
     } catch (error) {
       console.error('Signup error', error);
+      // Error toast is shown by AuthContext
     } finally {
       setIsLoading(false);
     }

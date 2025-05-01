@@ -21,17 +21,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // Check active session and subscribe to auth changes
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        fetchUserProfile(session.user.id);
-      } else {
+    // First check current session
+    const checkSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          fetchUserProfile(session.user.id);
+        } else {
+          setUser(null);
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Error checking session:', error);
         setLoading(false);
       }
-    });
+    };
+    
+    checkSession();
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    // Subscribe to auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         fetchUserProfile(session.user.id);
       } else {
@@ -73,6 +82,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
         
         setUser(userData);
+      } else {
+        console.error('No profile found for user');
+        setUser(null);
       }
     } catch (error) {
       console.error('Error fetching user profile:', error);
@@ -80,6 +92,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         description: 'Please try refreshing the page',
         position: 'top-center',
       });
+      setUser(null);
     } finally {
       setLoading(false);
     }
@@ -88,21 +101,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const login = async (email: string, password: string) => {
     try {
       setLoading(true);
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) throw error;
 
-      toast('Login successful', {
-        description: 'Welcome back!',
-        position: 'top-center',
-      });
-    } catch (error) {
+      if (data.user) {
+        toast('Login successful', {
+          description: 'Welcome back!',
+          position: 'top-center',
+        });
+      }
+    } catch (error: any) {
       console.error('Login error:', error);
       toast('Login failed', {
-        description: 'Invalid email or password',
+        description: error.message || 'Invalid email or password',
         position: 'top-center',
       });
       throw error;
@@ -114,7 +129,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signup = async (email: string, password: string, name: string, role: UserRole) => {
     try {
       setLoading(true);
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -127,14 +142,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (error) throw error;
 
-      toast('Account created successfully', {
-        description: 'Please check your email to verify your account',
-        position: 'top-center',
-      });
-    } catch (error) {
+      if (data.user) {
+        toast('Account created successfully', {
+          description: 'Please check your email to verify your account',
+          position: 'top-center',
+        });
+      }
+    } catch (error: any) {
       console.error('Signup error:', error);
       toast('Signup failed', {
-        description: 'Could not create account. Please try again.',
+        description: error.message || 'Could not create account. Please try again.',
         position: 'top-center',
       });
       throw error;
@@ -145,7 +162,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = async () => {
     try {
-      await supabase.auth.signOut();
+      setLoading(true);
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
       setUser(null);
       toast('Logged out successfully', {
         position: 'top-center',
@@ -156,6 +176,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         description: 'Please try again',
         position: 'top-center',
       });
+    } finally {
+      setLoading(false);
     }
   };
 
