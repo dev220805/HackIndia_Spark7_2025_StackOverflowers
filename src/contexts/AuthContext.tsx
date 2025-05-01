@@ -1,130 +1,106 @@
-
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, UserRole } from '@/types';
+import { createContext, useContext, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
+import { User, UserRole } from '@/types';
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, name: string, role: UserRole) => Promise<void>;
-  logout: () => void;
   loading: boolean;
+  signup: (email: string, password: string, name: string, role: UserRole) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};
+
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
-  // Check active session and subscribe to auth changes
   useEffect(() => {
-    // First check current session
-    const checkSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          fetchUserProfile(session.user.id);
-        } else {
-          setUser(null);
-          setLoading(false);
-        }
-      } catch (error) {
-        console.error('Error checking session:', error);
-        setLoading(false);
-      }
-    };
-    
-    checkSession();
+    const getSession = async () => {
+      setLoading(true);
+      const { data: { session } } = await supabase.auth.getSession();
 
-    // Subscribe to auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        fetchUserProfile(session.user.id);
-      } else {
+      if (session) {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+
+        if (profileError) {
+          console.error('Error fetching profile:', profileError);
+          toast('Failed to fetch profile', {
+            description: profileError.message,
+            position: 'top-center',
+          });
+        } else {
+          const userRole = profileData?.role as UserRole;
+          setUser({
+            id: session.user.id,
+            name: profileData?.name || session.user.email || 'User',
+            email: session.user.email || '',
+            role: userRole,
+            avatar: profileData?.avatar_url || '',
+            location: profileData?.location || undefined,
+            createdAt: profileData?.created_at || new Date().toISOString(),
+            verified: profileData?.verified || false,
+          });
+          setIsAuthenticated(true);
+        }
+      }
+      setLoading(false);
+    };
+
+    getSession();
+
+    supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+
+        if (profileError) {
+          console.error('Error fetching profile:', profileError);
+          toast('Failed to fetch profile', {
+            description: profileError.message,
+            position: 'top-center',
+          });
+        } else {
+          const userRole = profileData?.role as UserRole;
+          setUser({
+            id: session.user.id,
+            name: profileData?.name || session.user.email || 'User',
+            email: session.user.email || '',
+            role: userRole,
+            avatar: profileData?.avatar_url || '',
+            location: profileData?.location || undefined,
+            createdAt: profileData?.created_at || new Date().toISOString(),
+            verified: profileData?.verified || false,
+          });
+          setIsAuthenticated(true);
+        }
+      } else if (event === 'SIGNED_OUT') {
         setUser(null);
-        setLoading(false);
+        setIsAuthenticated(false);
       }
     });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const fetchUserProfile = async (userId: string) => {
-    try {
-      const { data: profileData, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
-
-      if (error) throw error;
-      
-      if (profileData) {
-        // Transform the profile data to match the User type
-        const userData: User = {
-          id: profileData.id,
-          email: '', // We need to get this from the auth.user
-          name: profileData.name,
-          role: profileData.role as UserRole,
-          avatar: profileData.avatar_url,
-          createdAt: profileData.created_at,
-          verified: profileData.verified || false,
-          location: profileData.location as any,
-        };
-        
-        // Get the email from the auth user
-        const { data: authUser } = await supabase.auth.getUser();
-        if (authUser?.user) {
-          userData.email = authUser.user.email || '';
-        }
-        
-        setUser(userData);
-      } else {
-        console.error('No profile found for user');
-        setUser(null);
-      }
-    } catch (error) {
-      console.error('Error fetching user profile:', error);
-      toast('Error loading profile', {
-        description: 'Please try refreshing the page',
-        position: 'top-center',
-      });
-      setUser(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const login = async (email: string, password: string) => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) throw error;
-
-      if (data.user) {
-        toast('Login successful', {
-          description: 'Welcome back!',
-          position: 'top-center',
-        });
-      }
-    } catch (error: any) {
-      console.error('Login error:', error);
-      toast('Login failed', {
-        description: error.message || 'Invalid email or password',
-        position: 'top-center',
-      });
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [navigate]);
 
   const signup = async (email: string, password: string, name: string, role: UserRole) => {
     try {
@@ -142,7 +118,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           },
         },
       });
-
+      
       if (error) throw error;
 
       if (data.user) {
@@ -159,12 +135,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           
         // If no profile exists, create one
         if (!existingProfile) {
+          // Convert UserRole to database enum type
+          const dbRole = role === 'donor' ? 'donor' : 'ngo';
+          
           const { error: insertError } = await supabase
             .from('profiles')
             .insert({
               id: data.user.id,
               name: name,
-              role: role
+              role: dbRole
             });
             
           if (insertError) {
@@ -177,14 +156,79 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           description: 'Please check your email to verify your account',
           position: 'top-center',
         });
+        setIsAuthenticated(true);
+        setUser({
+          id: data.user.id,
+          name: name,
+          email: data.user.email || '',
+          role: role,
+          createdAt: new Date().toISOString(),
+          verified: false
+        });
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Signup error:', error);
+      
+      const errorMessage = (error as Error).message || 'An error occurred during signup';
       toast('Signup failed', {
-        description: error.message || 'Could not create account. Please try again.',
+        description: errorMessage,
         position: 'top-center',
       });
+      
       throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const login = async (email: string, password: string) => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+
+      if (data.user) {
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', data.user.id)
+          .single();
+
+        if (profileError) {
+          console.error('Error fetching profile:', profileError);
+          toast('Failed to fetch profile', {
+            description: profileError.message,
+            position: 'top-center',
+          });
+        } else {
+          const userRole = profileData?.role as UserRole;
+          setUser({
+            id: data.user.id,
+            name: profileData?.name || data.user.email || 'User',
+            email: data.user.email || '',
+            role: userRole,
+            avatar: profileData?.avatar_url || '',
+            location: profileData?.location || undefined,
+            createdAt: profileData?.created_at || new Date().toISOString(),
+            verified: profileData?.verified || false,
+          });
+          setIsAuthenticated(true);
+          navigate('/');
+          toast('Login successful', {
+            position: 'top-center',
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      toast('Login failed', {
+        description: (error as Error).message || 'Invalid credentials',
+        position: 'top-center',
+      });
     } finally {
       setLoading(false);
     }
@@ -193,17 +237,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = async () => {
     try {
       setLoading(true);
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      
+      await supabase.auth.signOut();
       setUser(null);
-      toast('Logged out successfully', {
+      setIsAuthenticated(false);
+      navigate('/login');
+      toast('Logout successful', {
         position: 'top-center',
       });
     } catch (error) {
       console.error('Logout error:', error);
       toast('Logout failed', {
-        description: 'Please try again',
+        description: (error as Error).message || 'An error occurred',
         position: 'top-center',
       });
     } finally {
@@ -211,17 +255,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const value = {
+    user,
+    isAuthenticated,
+    loading,
+    signup,
+    login,
+    logout,
+  };
+
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, signup, logout, loading }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
-};
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
 };

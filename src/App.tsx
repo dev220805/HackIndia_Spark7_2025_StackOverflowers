@@ -17,6 +17,7 @@ import Profile from "./pages/Profile";
 import Map from "./pages/Map";
 import About from "./pages/About";
 import DonationPage from "./pages/DonationPage";
+import OrganDonation from "./pages/OrganDonation";
 import ChatbotButton from "./components/ChatbotButton";
 
 const queryClient = new QueryClient();
@@ -40,6 +41,7 @@ const App = () => (
             <Route path="/map" element={<Map />} />
             <Route path="/about" element={<About />} />
             <Route path="/donate/:id" element={<DonationPage />} />
+            <Route path="/organ-donation" element={<OrganDonation />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
           <ChatbotButton />

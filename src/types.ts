@@ -70,3 +70,24 @@ export interface Donation {
   proofImages?: string[];
   notes?: string;
 }
+
+export type OrganType = 'kidney' | 'liver' | 'heart' | 'lung' | 'pancreas' | 'cornea' | 'bone_marrow' | 'blood' | 'plasma' | 'skin' | 'tissue';
+export type BloodType = 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-';
+export type UrgencyLevel = 'low' | 'medium' | 'high';
+export type OrganDonationStatus = 'active' | 'matched' | 'completed' | 'cancelled';
+
+export interface OrganDonation {
+  id: string;
+  user_id: string;
+  type: 'donation' | 'request';
+  organ_type: OrganType;
+  blood_type: BloodType;
+  urgency?: UrgencyLevel;
+  medical_history?: string;
+  patient_details?: string;
+  hospital?: string;
+  notes?: string;
+  status: OrganDonationStatus;
+  created_at: string;
+  updated_at?: string;
+}
