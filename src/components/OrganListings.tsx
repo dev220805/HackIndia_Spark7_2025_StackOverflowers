@@ -1,195 +1,190 @@
-
-import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { useEffect, useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Heart } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { OrganDonation } from '@/types';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/components/ui/sonner';
 import { useAuth } from '@/contexts/AuthContext';
-import { organTypes } from '@/data/organData';
+import { toast } from '@/components/ui/sonner';
 
-type OrganDonationUser = {
-  name: string;
-  email: string;
-};
+interface OrganListingsProps {
+  selectedTab?: string;
+}
 
-type OrganDonation = {
-  id: string;
-  created_at: string;
-  user_id: string;
-  type: 'donation' | 'request';
-  organ_type: string;
-  blood_type: string;
-  urgency?: 'low' | 'medium' | 'high';
-  medical_history?: string;
-  patient_details?: string;
-  hospital?: string;
-  notes?: string;
-  status: 'active' | 'matched' | 'completed' | 'cancelled';
-  profiles?: OrganDonationUser;
-};
-
-type OrganListingsProps = {
-  type: 'donation' | 'request';
-};
-
-const OrganListings = ({ type }: OrganListingsProps) => {
-  const [listings, setListings] = useState<OrganDonation[]>([]);
+export default function OrganListings({ selectedTab = 'all' }: OrganListingsProps) {
+  const [donations, setDonations] = useState<OrganDonation[]>([]);
+  const [requests, setRequests] = useState<OrganDonation[]>([]);
+  const [activeTab, setActiveTab] = useState(selectedTab);
   const [loading, setLoading] = useState(true);
   const { isAuthenticated, user } = useAuth();
 
-  const getOrganLabel = (value: string) => {
-    const organ = organTypes.find(o => o.value === value);
-    return organ ? organ.label : value;
-  };
-  
-  const getUrgencyColor = (urgency?: string) => {
-    switch (urgency) {
-      case 'high': return 'bg-red-100 text-red-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      case 'low': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
   useEffect(() => {
-    const fetchListings = async () => {
+    const fetchOrganData = async () => {
       try {
         setLoading(true);
         
-        const { data, error } = await supabase
+        // Fetch donations
+        const { data: donationData, error: donationError } = await supabase
           .from('organ_donations')
-          .select(`
-            *,
-            profiles:user_id (
-              name,
-              email
-            )
-          `)
-          .eq('type', type)
-          .eq('status', 'active')
+          .select(`*, profiles:user_id(name)`)
+          .eq('type', 'donation')
           .order('created_at', { ascending: false });
-          
-        if (error) throw error;
         
-        setListings(data || []);
+        if (donationError) {
+          throw donationError;
+        }
+        
+        // Fetch requests
+        const { data: requestData, error: requestError } = await supabase
+          .from('organ_donations')
+          .select(`*, profiles:user_id(name)`)
+          .eq('type', 'request')
+          .order('created_at', { ascending: false });
+        
+        if (requestError) {
+          throw requestError;
+        }
+        
+        // Transform the data to match OrganDonation type
+        const formattedDonations = donationData.map(item => ({
+          id: item.id,
+          userId: item.user_id,
+          type: 'donation' as const,
+          organType: item.organ_type,
+          bloodType: item.blood_type,
+          hospital: item.hospital,
+          patientDetails: item.patient_details,
+          medicalHistory: item.medical_history,
+          urgency: item.urgency,
+          status: item.status,
+          notes: item.notes,
+          createdAt: item.created_at,
+          updatedAt: item.updated_at,
+          userName: item.profiles?.name || 'Anonymous'
+        }));
+        
+        const formattedRequests = requestData.map(item => ({
+          id: item.id,
+          userId: item.user_id,
+          type: 'request' as const,
+          organType: item.organ_type,
+          bloodType: item.blood_type,
+          hospital: item.hospital,
+          patientDetails: item.patient_details,
+          medicalHistory: item.medical_history,
+          urgency: item.urgency,
+          status: item.status,
+          notes: item.notes,
+          createdAt: item.created_at,
+          updatedAt: item.updated_at,
+          userName: item.profiles?.name || 'Anonymous'
+        }));
+        
+        setDonations(formattedDonations);
+        setRequests(formattedRequests);
       } catch (error) {
-        console.error(`Error fetching ${type} listings:`, error);
-        toast(`Failed to load ${type} listings`, {
-          description: 'Please try again later',
+        console.error('Error fetching organ donation data:', error);
+        toast('Failed to load organ donation data', {
+          position: 'top-center',
         });
       } finally {
         setLoading(false);
       }
     };
     
-    fetchListings();
-  }, [type]);
-
-  const handleContact = (listing: OrganDonation) => {
-    if (!isAuthenticated) {
-      toast('Authentication required', {
-        description: 'Please sign in to contact donors or requesters',
-        action: {
-          label: 'Sign In',
-          onClick: () => window.location.href = '/login'
-        }
-      });
-      return;
+    fetchOrganData();
+  }, []);
+  
+  const getUrgencyColor = (urgency: string) => {
+    switch (urgency) {
+      case 'high':
+        return 'bg-red-500 text-white';
+      case 'medium':
+        return 'bg-yellow-500 text-gray-900';
+      case 'low':
+        return 'bg-green-500 text-white';
+      default:
+        return 'bg-gray-300 text-gray-700';
     }
-    
-    // In a real app, this would open a chat or contact form
-    toast('Contact initiated', {
-      description: `You'll be connected with ${listing.profiles?.name} shortly`,
-    });
   };
 
-  if (loading) {
-    return (
-      <div className="text-center py-12">
-        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent" />
-        <p className="mt-4">Loading listings...</p>
-      </div>
-    );
-  }
+  const OrganCard = ({ organ }: { organ: OrganDonation }) => (
+    <Card className="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
+      <CardHeader>
+        <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">{organ.organType}</CardTitle>
+        <CardDescription className="text-gray-500 dark:text-gray-400">
+          Posted by: {organ.userName}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between mb-2">
+          <Badge className={`uppercase ${getUrgencyColor(organ.urgency)}`}>
+            {organ.urgency}
+          </Badge>
+          <span className="text-sm text-gray-600 dark:text-gray-300">
+            {new Date(organ.createdAt).toLocaleDateString()}
+          </span>
+        </div>
+        <p className="text-gray-700 dark:text-gray-200">
+          Blood Type: {organ.bloodType}
+        </p>
+        <p className="text-gray-700 dark:text-gray-200">
+          Hospital: {organ.hospital}
+        </p>
+        {isAuthenticated && user?.role === 'ngo' && (
+          <p className="text-gray-700 dark:text-gray-200">
+            Notes: {organ.notes}
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
 
-  if (listings.length === 0) {
+  const renderContent = () => {
+    if (loading) {
+      return <div className="text-center">Loading organ data...</div>;
+    }
+
+    let filteredData: OrganDonation[];
+    if (activeTab === 'donations') {
+      filteredData = donations;
+    } else if (activeTab === 'requests') {
+      filteredData = requests;
+    } else {
+      filteredData = [...donations, ...requests];
+    }
+
+    if (filteredData.length === 0) {
+      return <div className="text-center">No organ data available.</div>;
+    }
+
     return (
-      <div className="text-center py-12">
-        <Heart className="mx-auto h-12 w-12 text-gray-400 mb-4" />
-        <h3 className="text-lg font-medium mb-2">No {type === 'donation' ? 'donation offers' : 'donation requests'} yet</h3>
-        <p className="text-gray-500 mb-6">Be the first to post a {type === 'donation' ? 'donation offer' : 'donation request'}</p>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {filteredData.map((organ) => (
+          <OrganCard key={organ.id} organ={organ} />
+        ))}
       </div>
     );
-  }
+  };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {listings.map((listing) => (
-        <Card key={listing.id} className="overflow-hidden">
-          <CardHeader>
-            <div className="flex justify-between items-start">
-              <div>
-                <CardTitle>{getOrganLabel(listing.organ_type)}</CardTitle>
-                <CardDescription>
-                  Blood Type: {listing.blood_type} • Posted{' '}
-                  {new Date(listing.created_at).toLocaleDateString()}
-                </CardDescription>
-              </div>
-              {listing.urgency && (
-                <Badge className={getUrgencyColor(listing.urgency)}>
-                  {listing.urgency.charAt(0).toUpperCase() + listing.urgency.slice(1)} Priority
-                </Badge>
-              )}
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {listing.patient_details && (
-                <div>
-                  <p className="text-sm font-medium">Patient Details:</p>
-                  <p className="text-sm text-gray-600">{listing.patient_details}</p>
-                </div>
-              )}
-              
-              {listing.hospital && (
-                <div>
-                  <p className="text-sm font-medium">Hospital:</p>
-                  <p className="text-sm text-gray-600">{listing.hospital}</p>
-                </div>
-              )}
-              
-              {listing.medical_history && (
-                <div>
-                  <p className="text-sm font-medium">Medical History:</p>
-                  <p className="text-sm text-gray-600">{listing.medical_history}</p>
-                </div>
-              )}
-              
-              {listing.notes && (
-                <div>
-                  <p className="text-sm font-medium">Additional Notes:</p>
-                  <p className="text-sm text-gray-600">{listing.notes}</p>
-                </div>
-              )}
-            </div>
-          </CardContent>
-          <CardFooter className="border-t bg-gray-50 p-4">
-            <div className="w-full">
-              <Button 
-                onClick={() => handleContact(listing)}
-                className="w-full"
-                disabled={listing.user_id === user?.id}
-              >
-                {listing.user_id === user?.id ? 'Your Post' : 'Contact'}
-              </Button>
-            </div>
-          </CardFooter>
-        </Card>
-      ))}
+    <div className="container mx-auto py-8">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="justify-center">
+          <TabsTrigger value="all">All</TabsTrigger>
+          <TabsTrigger value="donations">Donations</TabsTrigger>
+          <TabsTrigger value="requests">Requests</TabsTrigger>
+        </TabsList>
+        <TabsContent value="all" className="mt-6">
+          {renderContent()}
+        </TabsContent>
+        <TabsContent value="donations" className="mt-6">
+          {renderContent()}
+        </TabsContent>
+        <TabsContent value="requests" className="mt-6">
+          {renderContent()}
+        </TabsContent>
+      </Tabs>
     </div>
   );
-};
-
-export default OrganListings;
+}

@@ -50,11 +50,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           });
         } else {
           const userRole = profileData?.role as UserRole;
-          const locationData = profileData?.location ? {
-            lat: typeof profileData.location.lat === 'number' ? profileData.location.lat : 0,
-            lng: typeof profileData.location.lng === 'number' ? profileData.location.lng : 0,
-            address: typeof profileData.location.address === 'string' ? profileData.location.address : '',
-          } : undefined;
+          
+          // Safely handle location data with type checking
+          let locationData;
+          if (profileData?.location && typeof profileData.location === 'object') {
+            const location = profileData.location as Record<string, any>;
+            locationData = {
+              lat: typeof location.lat === 'number' ? location.lat : 0,
+              lng: typeof location.lng === 'number' ? location.lng : 0,
+              address: typeof location.address === 'string' ? location.address : '',
+            };
+          }
 
           setUser({
             id: session.user.id,
@@ -90,11 +96,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           });
         } else {
           const userRole = profileData?.role as UserRole;
-          const locationData = profileData?.location ? {
-            lat: typeof profileData.location.lat === 'number' ? profileData.location.lat : 0,
-            lng: typeof profileData.location.lng === 'number' ? profileData.location.lng : 0,
-            address: typeof profileData.location.address === 'string' ? profileData.location.address : '',
-          } : undefined;
+          
+          // Safely handle location data with type checking
+          let locationData;
+          if (profileData?.location && typeof profileData.location === 'object') {
+            const location = profileData.location as Record<string, any>;
+            locationData = {
+              lat: typeof location.lat === 'number' ? location.lat : 0,
+              lng: typeof location.lng === 'number' ? location.lng : 0,
+              address: typeof location.address === 'string' ? location.address : '',
+            };
+          }
 
           setUser({
             id: session.user.id,
@@ -219,13 +231,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           });
         } else {
           const userRole = profileData?.role as UserRole;
+          
+          // Safely handle location data with type checking
+          let locationData;
+          if (profileData?.location && typeof profileData.location === 'object') {
+            const location = profileData.location as Record<string, any>;
+            locationData = {
+              lat: typeof location.lat === 'number' ? location.lat : 0,
+              lng: typeof location.lng === 'number' ? location.lng : 0,
+              address: typeof location.address === 'string' ? location.address : '',
+            };
+          }
+          
           setUser({
             id: data.user.id,
             name: profileData?.name || data.user.email || 'User',
             email: data.user.email || '',
             role: userRole,
             avatar: profileData?.avatar_url || '',
-            location: profileData?.location || undefined,
+            location: locationData,
             createdAt: profileData?.created_at || new Date().toISOString(),
             verified: profileData?.verified || false,
           });
