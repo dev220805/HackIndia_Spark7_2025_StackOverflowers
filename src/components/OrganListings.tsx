@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,9 +10,10 @@ import { toast } from '@/components/ui/sonner';
 
 interface OrganListingsProps {
   selectedTab?: string;
+  type?: 'donation' | 'request';
 }
 
-export default function OrganListings({ selectedTab = 'all' }: OrganListingsProps) {
+export default function OrganListings({ selectedTab = 'all', type }: OrganListingsProps) {
   const [donations, setDonations] = useState<OrganDonation[]>([]);
   const [requests, setRequests] = useState<OrganDonation[]>([]);
   const [activeTab, setActiveTab] = useState(selectedTab);
@@ -26,7 +28,7 @@ export default function OrganListings({ selectedTab = 'all' }: OrganListingsProp
         // Fetch donations
         const { data: donationData, error: donationError } = await supabase
           .from('organ_donations')
-          .select(`*, profiles:user_id(name)`)
+          .select('*, profiles:user_id(name)')
           .eq('type', 'donation')
           .order('created_at', { ascending: false });
         
@@ -37,7 +39,7 @@ export default function OrganListings({ selectedTab = 'all' }: OrganListingsProp
         // Fetch requests
         const { data: requestData, error: requestError } = await supabase
           .from('organ_donations')
-          .select(`*, profiles:user_id(name)`)
+          .select('*, profiles:user_id(name)')
           .eq('type', 'request')
           .order('created_at', { ascending: false });
         
@@ -45,43 +47,16 @@ export default function OrganListings({ selectedTab = 'all' }: OrganListingsProp
           throw requestError;
         }
         
-        // Transform the data to match OrganDonation type
-        const formattedDonations = donationData.map(item => ({
-          id: item.id,
-          userId: item.user_id,
-          type: 'donation' as const,
-          organType: item.organ_type,
-          bloodType: item.blood_type,
-          hospital: item.hospital,
-          patientDetails: item.patient_details,
-          medicalHistory: item.medical_history,
-          urgency: item.urgency,
-          status: item.status,
-          notes: item.notes,
-          createdAt: item.created_at,
-          updatedAt: item.updated_at,
+        // Set formatted data directly without transformation
+        setDonations(donationData.map(item => ({
+          ...item,
           userName: item.profiles?.name || 'Anonymous'
-        }));
+        })));
         
-        const formattedRequests = requestData.map(item => ({
-          id: item.id,
-          userId: item.user_id,
-          type: 'request' as const,
-          organType: item.organ_type,
-          bloodType: item.blood_type,
-          hospital: item.hospital,
-          patientDetails: item.patient_details,
-          medicalHistory: item.medical_history,
-          urgency: item.urgency,
-          status: item.status,
-          notes: item.notes,
-          createdAt: item.created_at,
-          updatedAt: item.updated_at,
+        setRequests(requestData.map(item => ({
+          ...item,
           userName: item.profiles?.name || 'Anonymous'
-        }));
-        
-        setDonations(formattedDonations);
-        setRequests(formattedRequests);
+        })));
       } catch (error) {
         console.error('Error fetching organ donation data:', error);
         toast('Failed to load organ donation data', {
@@ -108,32 +83,32 @@ export default function OrganListings({ selectedTab = 'all' }: OrganListingsProp
     }
   };
 
-  const OrganCard = ({ organ }: { organ: OrganDonation }) => (
+  const OrganCard = ({ organ }: { organ: OrganDonation & { userName?: string } }) => (
     <Card className="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
       <CardHeader>
-        <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">{organ.organType}</CardTitle>
+        <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">{organ.organ_type}</CardTitle>
         <CardDescription className="text-gray-500 dark:text-gray-400">
-          Posted by: {organ.userName}
+          Posted by: {organ.userName || 'Anonymous'}
         </CardDescription>
       </CardHeader>
       <CardContent className="p-4">
         <div className="flex items-center justify-between mb-2">
-          <Badge className={`uppercase ${getUrgencyColor(organ.urgency)}`}>
-            {organ.urgency}
+          <Badge className={`uppercase ${getUrgencyColor(organ.urgency || 'low')}`}>
+            {organ.urgency || 'low'}
           </Badge>
           <span className="text-sm text-gray-600 dark:text-gray-300">
-            {new Date(organ.createdAt).toLocaleDateString()}
+            {new Date(organ.created_at).toLocaleDateString()}
           </span>
         </div>
         <p className="text-gray-700 dark:text-gray-200">
-          Blood Type: {organ.bloodType}
+          Blood Type: {organ.blood_type}
         </p>
         <p className="text-gray-700 dark:text-gray-200">
-          Hospital: {organ.hospital}
+          Hospital: {organ.hospital || 'Not specified'}
         </p>
         {isAuthenticated && user?.role === 'ngo' && (
           <p className="text-gray-700 dark:text-gray-200">
-            Notes: {organ.notes}
+            Notes: {organ.notes || 'None'}
           </p>
         )}
       </CardContent>
@@ -145,8 +120,14 @@ export default function OrganListings({ selectedTab = 'all' }: OrganListingsProp
       return <div className="text-center">Loading organ data...</div>;
     }
 
-    let filteredData: OrganDonation[];
-    if (activeTab === 'donations') {
+    let filteredData: (OrganDonation & { userName?: string })[];
+    
+    // If type prop is provided, show only that type regardless of active tab
+    if (type === 'donation') {
+      filteredData = donations;
+    } else if (type === 'request') {
+      filteredData = requests;
+    } else if (activeTab === 'donations') {
       filteredData = donations;
     } else if (activeTab === 'requests') {
       filteredData = requests;
@@ -166,6 +147,15 @@ export default function OrganListings({ selectedTab = 'all' }: OrganListingsProp
       </div>
     );
   };
+
+  // If a specific type is provided, don't show the tabs
+  if (type) {
+    return (
+      <div className="container mx-auto py-8">
+        {renderContent()}
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto py-8">
