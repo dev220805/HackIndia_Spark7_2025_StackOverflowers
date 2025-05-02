@@ -13,9 +13,14 @@ interface OrganListingsProps {
   type?: 'donation' | 'request';
 }
 
+// Create an extended type that includes the userName property
+interface ExtendedOrganDonation extends OrganDonation {
+  userName?: string;
+}
+
 export default function OrganListings({ selectedTab = 'all', type }: OrganListingsProps) {
-  const [donations, setDonations] = useState<OrganDonation[]>([]);
-  const [requests, setRequests] = useState<OrganDonation[]>([]);
+  const [donations, setDonations] = useState<ExtendedOrganDonation[]>([]);
+  const [requests, setRequests] = useState<ExtendedOrganDonation[]>([]);
   const [activeTab, setActiveTab] = useState(selectedTab);
   const [loading, setLoading] = useState(true);
   const { isAuthenticated, user } = useAuth();
@@ -28,7 +33,7 @@ export default function OrganListings({ selectedTab = 'all', type }: OrganListin
         // Fetch donations
         const { data: donationData, error: donationError } = await supabase
           .from('organ_donations')
-          .select('*, profiles:user_id(name)')
+          .select('*, profiles:profiles(name)')
           .eq('type', 'donation')
           .order('created_at', { ascending: false });
         
@@ -39,7 +44,7 @@ export default function OrganListings({ selectedTab = 'all', type }: OrganListin
         // Fetch requests
         const { data: requestData, error: requestError } = await supabase
           .from('organ_donations')
-          .select('*, profiles:user_id(name)')
+          .select('*, profiles:profiles(name)')
           .eq('type', 'request')
           .order('created_at', { ascending: false });
         
@@ -47,16 +52,22 @@ export default function OrganListings({ selectedTab = 'all', type }: OrganListin
           throw requestError;
         }
         
-        // Set formatted data directly without transformation
-        setDonations(donationData.map(item => ({
-          ...item,
-          userName: item.profiles?.name || 'Anonymous'
-        })));
+        // Transform donation data to match our ExtendedOrganDonation type
+        const formattedDonations: ExtendedOrganDonation[] = donationData.map(item => {
+          const donation: ExtendedOrganDonation = item as unknown as ExtendedOrganDonation;
+          donation.userName = item.profiles?.name || 'Anonymous';
+          return donation;
+        });
         
-        setRequests(requestData.map(item => ({
-          ...item,
-          userName: item.profiles?.name || 'Anonymous'
-        })));
+        // Transform request data to match our ExtendedOrganDonation type
+        const formattedRequests: ExtendedOrganDonation[] = requestData.map(item => {
+          const request: ExtendedOrganDonation = item as unknown as ExtendedOrganDonation;
+          request.userName = item.profiles?.name || 'Anonymous';
+          return request;
+        });
+        
+        setDonations(formattedDonations);
+        setRequests(formattedRequests);
       } catch (error) {
         console.error('Error fetching organ donation data:', error);
         toast('Failed to load organ donation data', {
@@ -83,7 +94,7 @@ export default function OrganListings({ selectedTab = 'all', type }: OrganListin
     }
   };
 
-  const OrganCard = ({ organ }: { organ: OrganDonation & { userName?: string } }) => (
+  const OrganCard = ({ organ }: { organ: ExtendedOrganDonation }) => (
     <Card className="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
       <CardHeader>
         <CardTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">{organ.organ_type}</CardTitle>
@@ -117,10 +128,10 @@ export default function OrganListings({ selectedTab = 'all', type }: OrganListin
 
   const renderContent = () => {
     if (loading) {
-      return <div className="text-center">Loading organ data...</div>;
+      return <div className="text-center">Loading organ donation data...</div>;
     }
 
-    let filteredData: (OrganDonation & { userName?: string })[];
+    let filteredData: ExtendedOrganDonation[];
     
     // If type prop is provided, show only that type regardless of active tab
     if (type === 'donation') {
