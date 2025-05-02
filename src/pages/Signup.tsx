@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -59,7 +58,11 @@ const Signup = () => {
     try {
       setIsLoading(true);
       console.log('Signing up with role:', role); // Debug log
-      await signup(email, password, name, role);
+      
+      // Ensure role is a valid value
+      const userRole: UserRole = role === 'donor' || role === 'ngo' ? role : 'donor';
+      
+      await signup(email, password, name, userRole);
       // On successful signup, the auth context will redirect
     } catch (error) {
       console.error('Signup error', error);
@@ -107,7 +110,7 @@ const Signup = () => {
                   <Label htmlFor="role">I am a</Label>
                   <Select 
                     value={role} 
-                    onValueChange={(value) => {
+                    onValueChange={(value: string) => {
                       console.log('Selected role:', value); // Debug log
                       setRole(value as UserRole);
                     }}

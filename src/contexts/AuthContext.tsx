@@ -159,13 +159,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           
         // If no profile exists, create one
         if (!existingProfile) {
-          // Use the role directly as it matches the database enum type
+          // Ensure role is of the correct type by validating it
+          const validRole: "donor" | "ngo" = role === 'donor' || role === 'ngo' 
+            ? role 
+            : 'donor'; // Default to donor if somehow an invalid role gets through
+            
           const { error: insertError } = await supabase
             .from('profiles')
             .insert({
               id: data.user.id,
               name: name,
-              role: role // This should now match the database enum type
+              role: validRole
             });
             
           if (insertError) {
