@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -160,15 +159,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           
         // If no profile exists, create one
         if (!existingProfile) {
-          // Convert UserRole to database enum type
-          const dbRole = role === 'donor' ? 'donor' : 'ngo';
-          
+          // Use the role directly as it matches the database enum type
           const { error: insertError } = await supabase
             .from('profiles')
             .insert({
               id: data.user.id,
               name: name,
-              role: dbRole
+              role: role // This should now match the database enum type
             });
             
           if (insertError) {
