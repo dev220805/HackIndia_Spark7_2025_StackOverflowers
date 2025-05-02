@@ -33,7 +33,7 @@ export default function OrganListings({ selectedTab = 'all', type }: OrganListin
         // Fetch donations
         const { data: donationData, error: donationError } = await supabase
           .from('organ_donations')
-          .select('*, profiles:profiles(name)')
+          .select('*')
           .eq('type', 'donation')
           .order('created_at', { ascending: false });
         
@@ -44,7 +44,7 @@ export default function OrganListings({ selectedTab = 'all', type }: OrganListin
         // Fetch requests
         const { data: requestData, error: requestError } = await supabase
           .from('organ_donations')
-          .select('*, profiles:profiles(name)')
+          .select('*')
           .eq('type', 'request')
           .order('created_at', { ascending: false });
         
@@ -52,17 +52,39 @@ export default function OrganListings({ selectedTab = 'all', type }: OrganListin
           throw requestError;
         }
         
+        // Get user profiles for the donation data
+        const donationUserIds = donationData.map(item => item.user_id);
+        const { data: donationProfiles } = await supabase
+          .from('profiles')
+          .select('id, name')
+          .in('id', donationUserIds);
+        
+        // Get user profiles for the request data
+        const requestUserIds = requestData.map(item => item.user_id);
+        const { data: requestProfiles } = await supabase
+          .from('profiles')
+          .select('id, name')
+          .in('id', requestUserIds);
+          
+        // Create a map of user IDs to names for quick lookup
+        const profileMap = new Map();
+        [...(donationProfiles || []), ...(requestProfiles || [])].forEach(profile => {
+          if (profile && profile.id) {
+            profileMap.set(profile.id, profile.name);
+          }
+        });
+        
         // Transform donation data to match our ExtendedOrganDonation type
         const formattedDonations: ExtendedOrganDonation[] = donationData.map(item => {
-          const donation: ExtendedOrganDonation = item as unknown as ExtendedOrganDonation;
-          donation.userName = item.profiles?.name || 'Anonymous';
+          const donation: ExtendedOrganDonation = item as ExtendedOrganDonation;
+          donation.userName = profileMap.get(item.user_id) || 'Anonymous';
           return donation;
         });
         
         // Transform request data to match our ExtendedOrganDonation type
         const formattedRequests: ExtendedOrganDonation[] = requestData.map(item => {
-          const request: ExtendedOrganDonation = item as unknown as ExtendedOrganDonation;
-          request.userName = item.profiles?.name || 'Anonymous';
+          const request: ExtendedOrganDonation = item as ExtendedOrganDonation;
+          request.userName = profileMap.get(item.user_id) || 'Anonymous';
           return request;
         });
         
